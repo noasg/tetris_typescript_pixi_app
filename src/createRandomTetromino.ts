@@ -7,7 +7,6 @@ import {
   getBooleanGrid,
   checkTopRow,
   placeTetrominoOnGrid,
-  redrawBoard,
   clearCompletedLines,
 } from "./gameUtils"; // Import the helper functions
 import {
@@ -17,6 +16,7 @@ import {
   FALL_SPEED,
   FALL_SPEED_FAST_MULTIPLIER,
 } from "./const";
+import { fallSpeed } from "./gameState";
 
 // Type definitions
 type Position = [number, number];
@@ -29,7 +29,10 @@ let canGenerate = true; // Flag to control tetromino generation
 
 export function createRandomTetromino(
   texture: PIXI.Texture,
-  container: PIXI.Container
+  container: PIXI.Container,
+  app: PIXI.Application,
+  gameLevelText?: PIXI.Text,
+  boosterText?: PIXI.Text
 ) {
   if (!canGenerate) return;
   canGenerate = false;
@@ -84,19 +87,18 @@ export function createRandomTetromino(
   // Smooth falling logic
   let lastTime = performance.now();
   let accumulated = 0;
-  let fallSpeed = FALL_SPEED;
 
-  window.addEventListener("keydown", (e) => {
-    if (e.code === "ArrowDown") {
-      fallSpeed = FALL_SPEED * FALL_SPEED_FAST_MULTIPLIER;
-    }
-  });
+  // window.addEventListener("keydown", (e) => {
+  //   if (e.code === "ArrowDown") {
+  //     fallSpeed = FALL_SPEED * FALL_SPEED_FAST_MULTIPLIER;
+  //   }
+  // });
 
-  window.addEventListener("keyup", (e) => {
-    if (e.code === "ArrowDown") {
-      fallSpeed = FALL_SPEED;
-    }
-  });
+  // window.addEventListener("keyup", (e) => {
+  //   if (e.code === "ArrowDown") {
+  //     fallSpeed = FALL_SPEED;
+  //   }
+  // });
 
   function animate(time: number) {
     const delta = time - lastTime;
@@ -109,13 +111,27 @@ export function createRandomTetromino(
 
       if (!moved) {
         placeTetrominoOnGrid(tetromino, normalized, grid);
-        clearCompletedLines(grid, container, texture);
+        clearCompletedLines(
+          grid,
+          container,
+          texture,
+          app,
+          gameLevelText,
+          boosterText
+        );
+
         controller.cleanup();
         canGenerate = true;
 
         console.log("generate a new piece", canGenerate);
         if (canGenerate) {
-          createRandomTetromino(texture, container);
+          createRandomTetromino(
+            texture,
+            container,
+            app,
+            gameLevelText,
+            boosterText
+          );
         }
         return;
       }

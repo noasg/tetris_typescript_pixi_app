@@ -1,12 +1,22 @@
-// gameUtils.ts (This file will contain the refactored helper functions)
-import { ROWS, COLS, BLOCK_SIZE } from "./const";
+import {
+  ROWS,
+  COLS,
+  BLOCK_SIZE,
+  LINES_PER_LEVEL,
+  FALL_SPEED_INCREMENT_PER_LEVEL,
+} from "./const";
 import { printGrid } from "./utils"; // Import printGrid
 import * as PIXI from "pixi.js";
+import { createOrUpdateTextLabel } from "./utils"; // Import the new helper function for text updates
+import { fallSpeed, setFallSpeed } from "./gameState";
+
 // Type Definitions
 export type Position = [number, number];
-
 export type Cell = { filled: boolean; color?: number };
 
+let gameLevel = 1; // Example: Level counter
+let booster = 0; // Example: Booster counter
+let totalLinesCleared = 0;
 // Helper function to convert Cell[][] to boolean[][]
 export function getBooleanGrid(grid: Cell[][]): boolean[][] {
   return grid.map((row) => row.map((cell) => cell.filled));
@@ -67,7 +77,10 @@ export function redrawBoard(
 export function clearCompletedLines(
   grid: Cell[][],
   container: PIXI.Container,
-  texture: PIXI.Texture
+  texture: PIXI.Texture,
+  app: PIXI.Application, // Ensure app is passed here
+  gameLevelText: PIXI.Text | undefined, // Optional parameter for game level text
+  boosterText: PIXI.Text | undefined // Optional parameter for booster text
 ) {
   let linesCleared = 0;
   for (let y = ROWS - 1; y >= 0; y--) {
@@ -80,6 +93,46 @@ export function clearCompletedLines(
   }
 
   if (linesCleared > 0) {
+    // Redraw the board
+    totalLinesCleared += linesCleared;
+    console.log("Total lines cleared:", totalLinesCleared);
     redrawBoard(container, grid, texture);
+
+    // Update the game level and booster texts
+    const newLevel = Math.floor(totalLinesCleared / LINES_PER_LEVEL) + 1;
+    console.log(
+      "Total lines cleared:",
+      totalLinesCleared,
+      LINES_PER_LEVEL,
+      newLevel,
+      gameLevel
+    );
+    // gameLevel += 1; // Increase level after clearing lines (adjust this logic as needed)
+    // booster += 1; // You can modify this as needed based on game mechanics
+    if (newLevel > gameLevel) {
+      gameLevel = newLevel;
+      booster = newLevel - 1;
+      setFallSpeed(fallSpeed * FALL_SPEED_INCREMENT_PER_LEVEL); // Slower speed = faster fall
+    }
+
+    // Update text labels
+    createOrUpdateTextLabel(
+      `Game Level: ${gameLevel}`,
+      18,
+      0x000000,
+      5,
+      5,
+      app, // Pass app to the text update function
+      gameLevelText
+    );
+    createOrUpdateTextLabel(
+      `Booster: ${booster}`,
+      18,
+      0x000000,
+      app.screen.width - 100,
+      5,
+      app, // Pass app to the text update function
+      boosterText
+    );
   }
 }

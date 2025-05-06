@@ -9,3 +9,6 @@ export const ROWS = 20;
 
 export const FALL_SPEED = 40; // pixels per second
 export const FALL_SPEED_FAST_MULTIPLIER = 4; // when ArrowDown is held
+
+export const LINES_PER_LEVEL = 10;
+export const FALL_SPEED_INCREMENT_PER_LEVEL = 1.5; //50% speed per level

@@ -12,9 +12,18 @@
         align-items: center;
         justify-content: center;
         height: 100vh;
+        overflow: hidden; /* Prevent scrollbars */
       }
+
       canvas {
         border: 4px solid #b8009f;
+        display: block;
+      }
+
+      html,
+      body {
+        height: 100%;
+        width: 100%;
       }
     </style>
   </head>

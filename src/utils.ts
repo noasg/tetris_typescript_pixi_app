@@ -26,3 +26,33 @@ export function printGrid(grid: boolean[][], ROWS: number, COLS: number): void {
     console.log(rowStr);
   }
 }
+// Utility function to create or update text labels
+export function createOrUpdateTextLabel(
+  text: string,
+  fontSize: number,
+  color: number,
+  x: number,
+  y: number,
+  app: PIXI.Application,
+  existingLabel?: PIXI.Text // Optional parameter for an existing label to update
+) {
+  if (existingLabel) {
+    existingLabel.text = text; // Update the existing text
+  } else {
+    const label = new PIXI.Text(text, {
+      fontFamily: "Arial",
+      fontSize: fontSize,
+      fill: color, // Text color
+      align: "center",
+    });
+
+    // Position the text
+    label.x = x;
+    label.y = y;
+
+    // Add the text to the stage
+    app.stage.addChild(label);
+    return label;
+  }
+  return existingLabel; // Return updated label
+}
