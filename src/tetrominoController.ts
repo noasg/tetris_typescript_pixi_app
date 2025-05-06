@@ -1,9 +1,6 @@
 import * as PIXI from "pixi.js";
 import { rotatePosition } from "./utils";
-
-const BLOCK_SIZE = 40;
-const COLS = 10;
-const ROWS = 20;
+import { BLOCK_SIZE, COLS, ROWS } from "./const";
 
 type Position = [number, number];
 
@@ -45,6 +42,7 @@ export function setupTetrominoControls(
     return false;
   }
 
+  //method
   function rotate(direction: "left" | "right") {
     const angle = direction === "left" ? -90 : 90;
     const rotated = positions.map((pos) => rotatePosition(pos, angle));
@@ -69,7 +67,8 @@ export function setupTetrominoControls(
     }
   }
 
-  // Keyboard input
+  //When the user taps any of those keys, the tetromino will move in the direction of the arrow key pressed
+  //or rotate left or right depending on the key pressed
   const handler = (e: KeyboardEvent) => {
     switch (e.code) {
       case "ArrowLeft":
@@ -90,6 +89,7 @@ export function setupTetrominoControls(
     }
   };
 
+  //  event for keys to control the tetromino
   window.addEventListener("keydown", handler);
 
   return {

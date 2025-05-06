@@ -1,17 +1,28 @@
+// main file (e.g., game.ts or index.ts)
 import * as PIXI from "pixi.js";
 import { setupTetrominoControls } from "./tetrominoController";
 import { tetrominoTypes } from "./tetrominoData"; // Import the tetromino types data
 import { rotatePosition } from "./utils";
-
-const BLOCK_SIZE = 40;
-const COLS = 10; // Number of columns for the grid
-const ROWS = 20; // Number of rows for the grid
+import {
+  getBooleanGrid,
+  checkTopRow,
+  placeTetrominoOnGrid,
+  redrawBoard,
+  clearCompletedLines,
+} from "./gameUtils"; // Import the helper functions
+import {
+  ROWS,
+  COLS,
+  BLOCK_SIZE,
+  FALL_SPEED,
+  FALL_SPEED_FAST_MULTIPLIER,
+} from "./const";
 
 // Type definitions
 type Position = [number, number];
-
-const grid: boolean[][] = Array.from({ length: ROWS }, () =>
-  Array(COLS).fill(false)
+type Cell = { filled: boolean; color?: number };
+const grid: Cell[][] = Array.from({ length: ROWS }, () =>
+  Array.from({ length: COLS }, () => ({ filled: false }))
 );
 
 let canGenerate = true; // Flag to control tetromino generation
@@ -51,46 +62,41 @@ export function createRandomTetromino(
   const shapeWidth = Math.max(...normalized.map(([x]) => x)) + 1;
   tetromino.x = (COLS * BLOCK_SIZE - shapeWidth * BLOCK_SIZE) / 2;
   tetromino.x = Math.round(tetromino.x / BLOCK_SIZE) * BLOCK_SIZE;
-
-  // Set the initial Y position to just above the canvas
   tetromino.y = -BLOCK_SIZE;
 
   container.addChild(tetromino);
 
+  // Setup tetromino controls
   const controller = setupTetrominoControls(
     tetromino,
     normalized,
     positions,
-    grid,
+    getBooleanGrid(grid),
     () => {}
   );
 
-  function checkTopRow() {
-    return grid[0].some((cell) => cell);
-  }
-
-  if (checkTopRow()) {
+  // Check if the top row is filled
+  if (checkTopRow(grid)) {
     console.log("Game Over: Top row is filled.");
     return;
   }
 
-  function placeTetrominoOnGrid(
-    tetromino: PIXI.Container,
-    normalized: Position[]
-  ) {
-    normalized.forEach(([x, y]) => {
-      const gridX = Math.floor((tetromino.x + x * BLOCK_SIZE) / BLOCK_SIZE);
-      const gridY = Math.floor((tetromino.y + y * BLOCK_SIZE) / BLOCK_SIZE);
-      if (gridY >= 0 && gridY < ROWS && gridX >= 0 && gridX < COLS) {
-        grid[gridY][gridX] = true;
-      }
-    });
-  }
-
-  // 🎯 Smooth falling
+  // Smooth falling logic
   let lastTime = performance.now();
   let accumulated = 0;
-  const fallSpeed = 30; // pixels per second
+  let fallSpeed = FALL_SPEED;
+
+  window.addEventListener("keydown", (e) => {
+    if (e.code === "ArrowDown") {
+      fallSpeed = FALL_SPEED * FALL_SPEED_FAST_MULTIPLIER;
+    }
+  });
+
+  window.addEventListener("keyup", (e) => {
+    if (e.code === "ArrowDown") {
+      fallSpeed = FALL_SPEED;
+    }
+  });
 
   function animate(time: number) {
     const delta = time - lastTime;
@@ -102,7 +108,8 @@ export function createRandomTetromino(
       accumulated = 0;
 
       if (!moved) {
-        placeTetrominoOnGrid(tetromino, normalized);
+        placeTetrominoOnGrid(tetromino, normalized, grid);
+        clearCompletedLines(grid, container, texture);
         controller.cleanup();
         canGenerate = true;
 
