@@ -1,0 +1,32 @@
+{
+  "name": "y",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vite": "^6.3.5"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "esbuild": "^0.25.3",
+    "fdir": "^6.4.4",
+    "nanoid": "^3.3.11",
+    "picocolors": "^1.1.1",
+    "picomatch": "^4.0.2",
+    "pixi.js": "^5.3.3",
+    "postcss": "^8.5.3",
+    "rollup": "^4.40.1",
+    "source-map-js": "^1.2.1",
+    "tinyglobby": "^0.2.13"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
