@@ -16,7 +16,7 @@ import { fallSpeed, setFallSpeed } from "./gameState";
 export type Position = [number, number];
 export type Cell = { filled: boolean; color?: number };
 
-let gameLevel = 1; // Example: Level counter
+let gameLevel = 0; // Example: Level counter
 let booster = BOOSTER_INITIAL_VALUE; // Example: Booster counter
 let totalLinesCleared = 0;
 
@@ -279,8 +279,8 @@ export function clearCompletedLines(
     // gameLevel += 1; // Increase level after clearing lines (adjust this logic as needed)
     // booster += 1; // You can modify this as needed based on game mechanics
     if (newLevel >= gameLevel) {
+      booster = booster + newLevel - gameLevel;
       gameLevel = newLevel;
-      booster = booster + newLevel;
       if (booster > 10) {
         booster = BOOSTER_MAX_VALUE; // Cap the booster value at 10
       }
