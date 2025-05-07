@@ -1,9 +1,7 @@
 import * as PIXI from "pixi.js";
 import { createRandomTetromino } from "./createRandomTetromino";
-import { COLS, BLOCK_SIZE, ROWS } from "./const";
+import { COLS, BLOCK_SIZE, ROWS, BOOSTER_INITIAL_VALUE } from "./const";
 import { createOrUpdateTextLabel } from "./utils";
-import { grid } from "./gameUtils"; // Import grid
-import { redrawBoard } from "./gameUtils"; // Import redrawBoard to refresh the grid
 
 const GAME_WIDTH = COLS * BLOCK_SIZE; // 400
 const GAME_HEIGHT = ROWS * BLOCK_SIZE; // 800
@@ -13,6 +11,8 @@ document.body.style.margin = "0";
 document.body.style.padding = "0";
 document.body.style.overflow = "hidden";
 document.body.style.backgroundColor = "#000"; // Optional black bg
+let boosterText: PIXI.Text;
+let gameLevelText: PIXI.Text;
 
 export const app = new PIXI.Application({
   width: GAME_WIDTH,
@@ -30,10 +30,32 @@ PIXI.Loader.shared.add("square", "assets/square.svg").load(setup);
 function setup() {
   const squareTexture = PIXI.Texture.from("square");
 
-  createOrUpdateTextLabel("Game Level: 1", 18, 0x000000, 5, 5, app);
-  createOrUpdateTextLabel("Booster: 0", 18, 0x000000, GAME_WIDTH - 100, 5, app);
+  gameLevelText = createOrUpdateTextLabel(
+    `Game Level: 0`,
+    18,
+    0x000000,
+    5,
+    5,
+    app
+  );
 
-  createRandomTetromino(squareTexture, app.stage, app);
+  boosterText = createOrUpdateTextLabel(
+    `Booster: ${BOOSTER_INITIAL_VALUE}`,
+    18,
+    0x000000,
+    GAME_WIDTH - 100,
+    5,
+    app
+  );
+
+  createRandomTetromino(
+    squareTexture,
+    app.stage,
+    app,
+    gameLevelText,
+    boosterText
+  );
+
   resize(); // Initial call to fit the screen
 }
 

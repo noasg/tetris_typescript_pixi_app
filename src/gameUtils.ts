@@ -4,6 +4,8 @@ import {
   BLOCK_SIZE,
   LINES_PER_LEVEL,
   FALL_SPEED_INCREMENT_PER_LEVEL,
+  BOOSTER_MAX_VALUE,
+  BOOSTER_INITIAL_VALUE,
 } from "./const";
 import { printGrid } from "./utils"; // Import printGrid
 import * as PIXI from "pixi.js";
@@ -15,7 +17,7 @@ export type Position = [number, number];
 export type Cell = { filled: boolean; color?: number };
 
 let gameLevel = 1; // Example: Level counter
-let booster = 0; // Example: Booster counter
+let booster = BOOSTER_INITIAL_VALUE; // Example: Booster counter
 let totalLinesCleared = 0;
 
 // gameUtils.ts or grid.ts
@@ -42,7 +44,9 @@ export const spriteGrid: (PIXI.Sprite | undefined)[][] = Array.from(
 export function placeTetrominoOnGrid(
   tetromino: PIXI.Container,
   normalized: Position[],
-  grid: Cell[][]
+  grid: Cell[][],
+  app: PIXI.Application,
+  boosterText?: PIXI.Text
 ) {
   normalized.forEach(([x, y], index) => {
     const gridX = Math.floor((tetromino.x + x * BLOCK_SIZE) / BLOCK_SIZE);
@@ -56,28 +60,39 @@ export function placeTetrominoOnGrid(
       };
       spriteGrid[gridY][gridX] = sprite;
 
-      sprite.interactive = true;
-      sprite.buttonMode = true;
-      sprite.on("pointerdown", () => {
-        const clickedColor = grid[gridY][gridX].color;
-        console.log(`Clicked cell (${gridX}, ${gridY})`);
-        console.log(`Clicked color: ${clickedColor?.toString(16)}`);
-        // sprite.tint = 0xffffff;
-        const color = sprite.tint;
-        grid[gridY][gridX] = { filled: false, color: color };
-        const colorToDestroy = sprite.tint;
+      if (booster > 0) {
+        sprite.interactive = true;
+        sprite.buttonMode = true;
 
-        console.log(
-          `Starting flood fill for color: ${colorToDestroy.toString(16)}`
-        );
-        floodFill(grid, gridX, gridY, colorToDestroy);
-        printGrid(
-          grid.map((row) => row.map((cell) => cell.filled)),
-          ROWS
-        );
-        // Remove the sprite from the container
-        tetromino.removeChild(sprite);
-      });
+        sprite.on("pointerdown", () => {
+          console.log("Booster activated on new piece!");
+          const colorToDestroy = sprite.tint;
+          floodFill(grid, gridX, gridY, colorToDestroy);
+
+          // Remove the block and clear the grid
+          grid[gridY][gridX] = { filled: false, color: undefined };
+          sprite.parent?.removeChild(sprite);
+          spriteGrid[gridY][gridX] = undefined;
+
+          booster--;
+          if (booster <= 0) {
+            booster = 0;
+            disableAllBlockInteractions(); // Disable all interactions when booster runs out
+          }
+
+          createOrUpdateTextLabel(
+            `Booster: ${booster}`,
+            18,
+            0x000000,
+            app.screen.width - 100,
+            5,
+            app,
+            boosterText
+          );
+
+          floodFill(grid, gridX, gridY, colorToDestroy); // Perform flood fill
+        });
+      }
     }
   });
   printGrid(
@@ -159,9 +174,12 @@ function floodFill(grid: Cell[][], x: number, y: number, targetColor: number) {
 export function redrawBoard(
   container: PIXI.Container,
   grid: Cell[][],
-  texture: PIXI.Texture
+  texture: PIXI.Texture,
+  app: PIXI.Application, // Needed for text update
+  boosterText?: PIXI.Text
 ) {
   container.removeChildren();
+  console.log("Redrawing board with booster:", booster);
   for (let y = 0; y < ROWS; y++) {
     for (let x = 0; x < COLS; x++) {
       const cell = grid[y][x];
@@ -172,7 +190,50 @@ export function redrawBoard(
         block.x = x * BLOCK_SIZE;
         block.y = y * BLOCK_SIZE;
         block.tint = cell.color!;
+
         container.addChild(block);
+        spriteGrid[y][x] = block; // Restore sprite grid
+
+        if (booster > 0) {
+          block.interactive = true;
+          block.buttonMode = true;
+          block.on("pointerdown", () => {
+            console.log("Booster activated!");
+            const colorToDestroy = block.tint;
+            floodFill(grid, x, y, colorToDestroy);
+
+            grid[y][x] = { filled: false, color: undefined };
+            block.parent?.removeChild(block);
+            spriteGrid[y][x] = undefined;
+
+            booster--;
+            if (booster <= 0) {
+              booster = 0;
+              for (let yy = 0; yy < ROWS; yy++) {
+                for (let xx = 0; xx < COLS; xx++) {
+                  const b = spriteGrid[yy][xx];
+                  if (b) {
+                    b.interactive = false;
+                    b.buttonMode = false;
+                    b.removeAllListeners("pointerdown");
+                  }
+                }
+              }
+            }
+
+            createOrUpdateTextLabel(
+              `Booster: ${booster}`,
+              18,
+              0x000000,
+              app.screen.width - 100,
+              5,
+              app,
+              boosterText
+            );
+
+            floodFill(grid, x, y, colorToDestroy);
+          });
+        }
       }
     }
   }
@@ -201,10 +262,13 @@ export function clearCompletedLines(
     // Redraw the board
     totalLinesCleared += linesCleared;
     console.log("Total lines cleared:", totalLinesCleared);
-    redrawBoard(container, grid, texture);
+    redrawBoard(container, grid, texture, app, boosterText);
 
     // Update the game level and booster texts
-    const newLevel = Math.floor(totalLinesCleared / LINES_PER_LEVEL) + 1;
+    const newLevel = Math.floor(totalLinesCleared / LINES_PER_LEVEL);
+
+    console.log("New level:", newLevel);
+    console.log("Game level:", gameLevel);
     console.log(
       "Total lines cleared:",
       totalLinesCleared,
@@ -214,12 +278,16 @@ export function clearCompletedLines(
     );
     // gameLevel += 1; // Increase level after clearing lines (adjust this logic as needed)
     // booster += 1; // You can modify this as needed based on game mechanics
-    if (newLevel > gameLevel) {
+    if (newLevel >= gameLevel) {
       gameLevel = newLevel;
-      booster = newLevel - 1;
+      booster = booster + newLevel;
+      if (booster > 10) {
+        booster = BOOSTER_MAX_VALUE; // Cap the booster value at 10
+      }
+      console.log("BOOSER", booster);
       setFallSpeed(fallSpeed * FALL_SPEED_INCREMENT_PER_LEVEL); // Slower speed = faster fall
     }
-
+    redrawBoard(container, grid, texture, app, boosterText);
     // Update text labels
     createOrUpdateTextLabel(
       `Game Level: ${gameLevel}`,
@@ -239,5 +307,19 @@ export function clearCompletedLines(
       app, // Pass app to the text update function
       boosterText
     );
+  }
+}
+
+//Function to disable interaction for all blocks
+export function disableAllBlockInteractions() {
+  for (let y = 0; y < ROWS; y++) {
+    for (let x = 0; x < COLS; x++) {
+      const block = spriteGrid[y][x];
+      if (block) {
+        block.interactive = false;
+        block.buttonMode = false;
+        block.removeAllListeners("pointerdown");
+      }
+    }
   }
 }

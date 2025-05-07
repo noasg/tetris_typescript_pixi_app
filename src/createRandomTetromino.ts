@@ -68,7 +68,7 @@ export function createRandomTetromino(
     tetromino,
     normalized,
     positions,
-    () => getBooleanGrid(grid), // <-- pass a function, not a snapshot
+    () => getBooleanGrid(grid),
     () => {}
   );
 
@@ -104,7 +104,7 @@ export function createRandomTetromino(
       accumulated = 0;
 
       if (!moved) {
-        placeTetrominoOnGrid(tetromino, normalized, grid);
+        placeTetrominoOnGrid(tetromino, normalized, grid, app, boosterText);
         clearCompletedLines(
           grid,
           container,
@@ -135,5 +135,6 @@ export function createRandomTetromino(
   }
 
   requestAnimationFrame(animate);
+
   return randomKey;
 }

@@ -36,8 +36,12 @@ export function createOrUpdateTextLabel(
   existingLabel?: PIXI.Text // Optional parameter for an existing label to update
 ) {
   if (existingLabel) {
+    app.stage.removeChild(existingLabel);
     existingLabel.text = text; // Update the existing text
+    app.stage.addChild(existingLabel);
   } else {
+    console.log("Creating new label:", text);
+
     const label = new PIXI.Text(text, {
       fontFamily: "Arial",
       fontSize: fontSize,
