@@ -8,7 +8,7 @@ export function setupTetrominoControls(
   tetromino: PIXI.Container,
   normalized: Position[],
   positions: Position[],
-  grid: boolean[][],
+  getGrid: () => boolean[][], // ← dynamic getter
   updatePlacementCallback: () => void
 ) {
   let gridX = Math.floor(tetromino.x / BLOCK_SIZE);
@@ -20,11 +20,12 @@ export function setupTetrominoControls(
   }
 
   function canMove(newX: number, newY: number, shape = normalized): boolean {
+    const currentGrid = getGrid(); // Always get fresh grid
     return shape.every(([x, y]) => {
       const gx = newX + x;
       const gy = newY + y;
       return (
-        gx >= 0 && gx < COLS && gy < ROWS && (gy < 0 || !grid[gy][gx]) // Allow above top
+        gx >= 0 && gx < COLS && gy < ROWS && (gy < 0 || !currentGrid[gy][gx])
       );
     });
   }

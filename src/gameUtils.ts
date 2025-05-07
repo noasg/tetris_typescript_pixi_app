@@ -17,6 +17,13 @@ export type Cell = { filled: boolean; color?: number };
 let gameLevel = 1; // Example: Level counter
 let booster = 0; // Example: Booster counter
 let totalLinesCleared = 0;
+
+// gameUtils.ts or grid.ts
+export const grid: { filled: boolean; color?: number }[][] = Array.from(
+  { length: ROWS },
+  () => Array.from({ length: COLS }, () => ({ filled: false }))
+);
+
 // Helper function to convert Cell[][] to boolean[][]
 export function getBooleanGrid(grid: Cell[][]): boolean[][] {
   return grid.map((row) => row.map((cell) => cell.filled));
@@ -27,6 +34,10 @@ export function checkTopRow(grid: Cell[][]): boolean {
   return grid[0].some((cell) => cell.filled);
 }
 
+export const spriteGrid: (PIXI.Sprite | undefined)[][] = Array.from(
+  { length: ROWS },
+  () => Array.from({ length: COLS }, () => undefined)
+);
 // Function to place the tetromino on the grid
 export function placeTetrominoOnGrid(
   tetromino: PIXI.Container,
@@ -37,16 +48,110 @@ export function placeTetrominoOnGrid(
     const gridX = Math.floor((tetromino.x + x * BLOCK_SIZE) / BLOCK_SIZE);
     const gridY = Math.floor((tetromino.y + y * BLOCK_SIZE) / BLOCK_SIZE);
     if (gridY >= 0 && gridY < ROWS && gridX >= 0 && gridX < COLS) {
+      const sprite = tetromino.getChildAt(index) as PIXI.Sprite;
+
       grid[gridY][gridX] = {
         filled: true,
-        color: (tetromino.getChildAt(index) as PIXI.Sprite).tint,
+        color: sprite.tint,
       };
+      spriteGrid[gridY][gridX] = sprite;
+
+      sprite.interactive = true;
+      sprite.buttonMode = true;
+      sprite.on("pointerdown", () => {
+        const clickedColor = grid[gridY][gridX].color;
+        console.log(`Clicked cell (${gridX}, ${gridY})`);
+        console.log(`Clicked color: ${clickedColor?.toString(16)}`);
+        // sprite.tint = 0xffffff;
+        const color = sprite.tint;
+        grid[gridY][gridX] = { filled: false, color: color };
+        const colorToDestroy = sprite.tint;
+
+        console.log(
+          `Starting flood fill for color: ${colorToDestroy.toString(16)}`
+        );
+        floodFill(grid, gridX, gridY, colorToDestroy);
+        printGrid(
+          grid.map((row) => row.map((cell) => cell.filled)),
+          ROWS
+        );
+        // Remove the sprite from the container
+        tetromino.removeChild(sprite);
+      });
     }
   });
   printGrid(
     grid.map((row) => row.map((cell) => cell.filled)),
-    ROWS,
-    COLS
+    ROWS
+  );
+}
+
+// Flood fill algorithm to destroy adjacent squares with the same color
+function floodFill(grid: Cell[][], x: number, y: number, targetColor: number) {
+  const stack: Position[] = [[x, y]]; // Stack to keep track of cells to visit
+  const directions: Position[] = [
+    [0, 1], // Down
+    [1, 0], // Right
+    [0, -1], // Up
+    [-1, 0], // Left
+  ];
+
+  while (stack.length > 0) {
+    const [curX, curY] = stack.pop()!;
+
+    console.log(`Processing cell at (${curX}, ${curY})`);
+
+    // Skip if the cell is out of bounds or not matching the target color
+    if (curX < 0 || curX >= COLS || curY < 0 || curY >= ROWS) continue;
+
+    const cell = grid[curY][curX];
+    const sprite = spriteGrid[curY][curX];
+
+    if (grid[curY][curX].color !== targetColor) {
+      console.log(
+        `Skipping cell at (${curX}, ${curY}): Not matching the target color`
+      );
+      continue;
+    }
+
+    // Destroy the current cell (mark it as empty)
+    console.log(
+      `Destroying cell at (${curX}, ${curY}) with color ${grid[curY][
+        curX
+      ].color.toString(16)}`
+    );
+
+    // Remove the sprite visually
+    if (sprite) {
+      sprite.parent?.removeChild(sprite); // Remove from container
+      spriteGrid[curY][curX] = undefined; // Clear reference
+    }
+    grid[curY][curX] = { filled: false, color: undefined };
+
+    // Iterate over the 4 possible directions (right, down, left, up)
+    for (const [dx, dy] of directions) {
+      const newX = curX + dx;
+      const newY = curY + dy;
+
+      // Add the adjacent cell to the stack if it's within bounds and filled with the target color
+      if (
+        newX >= 0 &&
+        newX < COLS &&
+        newY >= 0 &&
+        newY < ROWS &&
+        grid[newY][newX].filled && // The cell should be filled
+        grid[newY][newX].color === targetColor // The color must match the target
+      ) {
+        console.log(`Adding adjacent cell (${newX}, ${newY}) to stack`);
+        stack.push([newX, newY]);
+      }
+    }
+  }
+
+  // Print grid status for debugging after the flood fill
+  printGrid(
+    grid.map((row) => row.map((cell) => cell.filled)),
+    ROWS
   );
 }
 

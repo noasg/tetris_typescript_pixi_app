@@ -9,13 +9,7 @@ import {
   placeTetrominoOnGrid,
   clearCompletedLines,
 } from "./gameUtils"; // Import the helper functions
-import {
-  ROWS,
-  COLS,
-  BLOCK_SIZE,
-  FALL_SPEED,
-  FALL_SPEED_FAST_MULTIPLIER,
-} from "./const";
+import { ROWS, COLS, BLOCK_SIZE } from "./const";
 import { fallSpeed } from "./gameState";
 
 // Type definitions
@@ -74,7 +68,7 @@ export function createRandomTetromino(
     tetromino,
     normalized,
     positions,
-    getBooleanGrid(grid),
+    () => getBooleanGrid(grid), // <-- pass a function, not a snapshot
     () => {}
   );
 
