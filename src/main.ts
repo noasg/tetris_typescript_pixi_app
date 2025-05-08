@@ -30,6 +30,7 @@ PIXI.Loader.shared.add("square", "assets/square.svg").load(setup);
 function setup() {
   const squareTexture = PIXI.Texture.from("square");
 
+  //crating the game level text
   gameLevelText = createOrUpdateTextLabel(
     `Game Level: 0`,
     18,
@@ -39,6 +40,7 @@ function setup() {
     app
   );
 
+  //crating the booster text
   boosterText = createOrUpdateTextLabel(
     `Booster: ${BOOSTER_INITIAL_VALUE}`,
     18,
@@ -48,6 +50,7 @@ function setup() {
     app
   );
 
+  //creating the first tetromino -> starting the game
   createRandomTetromino(
     squareTexture,
     app.stage,

@@ -59,3 +59,32 @@ export function createOrUpdateTextLabel(
   }
   return existingLabel; // Return updated label
 }
+
+// utils.ts
+export function animateBlockDestruction(
+  sprite: PIXI.Sprite,
+  onComplete: () => void
+) {
+  const duration = 300; // ms
+  const startTime = performance.now();
+  const initialScale = sprite.scale.x;
+  const initialAlpha = sprite.alpha;
+
+  const ticker = new PIXI.Ticker();
+  ticker.add(() => {
+    const now = performance.now();
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+
+    sprite.scale.set(initialScale * (1 - progress));
+    sprite.alpha = initialAlpha * (1 - progress);
+
+    if (progress >= 1) {
+      ticker.stop();
+      ticker.destroy();
+      onComplete();
+    }
+  });
+
+  ticker.start();
+}
