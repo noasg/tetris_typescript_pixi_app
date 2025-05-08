@@ -71,7 +71,7 @@ export function placeTetrominoOnGrid(
         sprite.on("pointerdown", () => {
           console.log("Booster activated on new piece!");
           const colorToDestroy = sprite.tint;
-          floodFill(grid, gridX, gridY, colorToDestroy); // Use flood fill to destroy adjacent blocks
+          // floodFill(grid, gridX, gridY, colorToDestroy); // Use flood fill to destroy adjacent blocks
 
           animateBlockDestruction(sprite, () => {
             sprite.parent?.removeChild(sprite); // Remove the sprite from the stage
@@ -215,7 +215,7 @@ export function redrawBoard(
           block.on("pointerdown", () => {
             console.log("Booster activated!");
             const colorToDestroy = block.tint;
-            floodFill(grid, x, y, colorToDestroy);
+            // floodFill(grid, x, y, colorToDestroy);
 
             animateBlockDestruction(block, () => {
               block.parent?.removeChild(block);
