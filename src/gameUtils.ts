@@ -7,7 +7,7 @@ import {
   BOOSTER_MAX_VALUE,
   BOOSTER_INITIAL_VALUE,
 } from "./const";
-import { animateBlockDestruction, printGrid } from "./utils"; // Import printGrid
+import { animateBlockDestruction, printGridWithSuspended } from "./utils"; // Import printGrid
 import * as PIXI from "pixi.js";
 import { createOrUpdateTextLabel } from "./utils"; // Import the new helper function for text updates
 import { fallSpeed, setFallSpeed } from "./gameState";
@@ -19,7 +19,6 @@ export type Cell = { filled: boolean; color?: number };
 let gameLevel = 0; // Game level counter
 let booster = BOOSTER_INITIAL_VALUE; // Booster power-up counter
 let totalLinesCleared = 0; // Total number of lines cleared
-
 // Grid initialization (2D array of cells, each cell starts as empty)
 export const grid: { filled: boolean; color?: number }[][] = Array.from(
   { length: ROWS },
@@ -49,6 +48,8 @@ export function placeTetrominoOnGrid(
   app: PIXI.Application,
   boosterText?: PIXI.Text
 ) {
+  console.log("placeTetrominoOnGrid");
+
   normalized.forEach(([x, y], index) => {
     const gridX = Math.floor((tetromino.x + x * BLOCK_SIZE) / BLOCK_SIZE); // Calculate grid position X
     const gridY = Math.floor((tetromino.y + y * BLOCK_SIZE) / BLOCK_SIZE); // Calculate grid position Y
@@ -69,15 +70,15 @@ export function placeTetrominoOnGrid(
         sprite.buttonMode = true;
 
         sprite.on("pointerdown", () => {
-          console.log("Booster activated on new piece!");
           const colorToDestroy = sprite.tint;
+          console.log("colorToDestroy", colorToDestroy);
           // floodFill(grid, gridX, gridY, colorToDestroy); // Use flood fill to destroy adjacent blocks
 
-          animateBlockDestruction(sprite, () => {
-            sprite.parent?.removeChild(sprite); // Remove the sprite from the stage
-            spriteGrid[gridY][gridX] = undefined; // Remove the sprite from the stage
-            grid[gridY][gridX] = { filled: false, color: undefined }; // Update grid
-          });
+          // animateBlockDestruction(sprite, () => {
+          //   sprite.parent?.removeChild(sprite); // Remove the sprite from the stage
+          //   spriteGrid[gridY][gridX] = undefined; // Remove the sprite from the stage
+          //   grid[gridY][gridX] = { filled: false, color: undefined }; // Update grid
+          // });
 
           booster--;
           if (booster <= 0) {
@@ -94,21 +95,28 @@ export function placeTetrominoOnGrid(
             app,
             boosterText
           );
-
           floodFill(grid, gridX, gridY, colorToDestroy); // Perform flood fill
+          // dropFloatingBlocks(grid, spriteGrid); // Drop any floating blocks after destruction
+
+          // printGrid(
+          //   grid.map((row) => row.map((cell) => cell.filled)),
+          //   ROWS
+          // );
         });
       }
     }
   });
-  printGrid(
-    grid.map((row) => row.map((cell) => cell.filled)),
-    ROWS
-  );
+  // printGrid(
+  //   grid.map((row) => row.map((cell) => cell.filled)),
+  //   ROWS
+  // );
 }
 
 // Flood fill algorithm to destroy adjacent squares with the same color
 function floodFill(grid: Cell[][], x: number, y: number, targetColor: number) {
+  console.log("Flood fill initiated at:", x, y, targetColor);
   const stack: Position[] = [[x, y]]; // Stack to keep track of cells to visit
+  console.log("Stack initialized:", stack);
   const visited = new Set<string>();
   const directions: Position[] = [
     [0, 1], // Down
@@ -119,8 +127,8 @@ function floodFill(grid: Cell[][], x: number, y: number, targetColor: number) {
 
   while (stack.length > 0) {
     const [curX, curY] = stack.pop()!;
+    console.log("Processing cell at:", [curX, curY]);
 
-    console.log(`Processing cell at (${curX}, ${curY})`);
     const key = `${curX},${curY}`;
     if (visited.has(key)) continue; // Skip if already visited
     visited.add(key);
@@ -128,59 +136,50 @@ function floodFill(grid: Cell[][], x: number, y: number, targetColor: number) {
     // Out of bounds check
     if (curX < 0 || curX >= COLS || curY < 0 || curY >= ROWS) continue;
 
-    // const cell = grid[curY][curX];
     const sprite = spriteGrid[curY][curX];
+    if (!sprite) {
+      console.log(`No sprite found at ${curX}, ${curY}`);
+      continue; // Skip if no sprite exists at the current cell
+    }
 
-    if (grid[curY][curX].color !== targetColor) {
+    // Check the sprite's tint instead of grid color
+    if (sprite.tint !== targetColor) {
       console.log(
-        `Skipping cell at (${curX}, ${curY}): Not matching the target color`
+        "Color mismatch (tint) — skipping:",
+        sprite.tint,
+        targetColor
       );
-      continue; // Skip if the color doesn't match the target color
+      continue; // Skip if the tint doesn't match the target color
     }
 
-    // Destroy the current cell (remove sprite and mark as empty)
-    console.log(
-      `Destroying cell at (${curX}, ${curY}) with color ${grid[curY][
-        curX
-      ].color.toString(16)}`
-    );
-
-    if (sprite) {
-      animateBlockDestruction(sprite, () => {
-        sprite.parent?.removeChild(sprite);
-        spriteGrid[curY][curX] = undefined;
-        grid[curY][curX] = { filled: false, color: undefined };
-      });
-    } else {
+    // Destroy the block if it matches the target color
+    console.log("Destroying block at:", curX, curY, targetColor);
+    animateBlockDestruction(sprite, () => {
+      sprite?.parent?.removeChild(sprite);
+      spriteGrid[curY][curX] = undefined;
       grid[curY][curX] = { filled: false, color: undefined };
-    }
+    });
 
     // Check adjacent cells (right, down, left, up)
     for (const [dx, dy] of directions) {
       const newX = curX + dx;
       const newY = curY + dy;
       const newKey = `${newX},${newY}`;
-      // Add the adjacent cell to the stack if it's within bounds and filled with the target color
+      // Add the adjacent cell to the stack if it's within bounds and filled with the target color (checked by sprite tint)
       if (
         newX >= 0 &&
         newX < COLS &&
         newY >= 0 &&
         newY < ROWS &&
         grid[newY][newX].filled && // The cell should be filled
-        grid[newY][newX].color === targetColor &&
-        !visited.has(newKey) // The color must match the target
+        spriteGrid[newY][newX]?.tint === targetColor && // Check sprite's tint
+        !visited.has(newKey) // The color (tint) must match the target
       ) {
-        console.log(`Adding adjacent cell (${newX}, ${newY}) to stack`);
         stack.push([newX, newY]);
       }
     }
   }
-
-  // Print grid status for debugging after the flood fill
-  printGrid(
-    grid.map((row) => row.map((cell) => cell.filled)),
-    ROWS
-  );
+  // dropFloatingBlocks(); // Optional: drop the floating blocks if necessary
 }
 
 // Function to redraw the board after clearing lines
@@ -217,11 +216,11 @@ export function redrawBoard(
             const colorToDestroy = block.tint;
             // floodFill(grid, x, y, colorToDestroy);
 
-            animateBlockDestruction(block, () => {
-              block.parent?.removeChild(block);
-              spriteGrid[y][x] = undefined;
-              grid[y][x] = { filled: false, color: undefined };
-            });
+            // animateBlockDestruction(block, () => {
+            //   block.parent?.removeChild(block);
+            //   spriteGrid[y][x] = undefined;
+            //   grid[y][x] = { filled: false, color: undefined };
+            // });
 
             booster--;
             if (booster <= 0) {
@@ -238,6 +237,8 @@ export function redrawBoard(
               }
             }
 
+            floodFill(grid, x, y, colorToDestroy);
+
             createOrUpdateTextLabel(
               `Booster: ${booster}`,
               18,
@@ -247,8 +248,6 @@ export function redrawBoard(
               app,
               boosterText
             );
-
-            floodFill(grid, x, y, colorToDestroy);
           });
         }
       }
@@ -339,5 +338,179 @@ export function disableAllBlockInteractions() {
         block.removeAllListeners("pointerdown");
       }
     }
+  }
+}
+
+export function getSuspendedBlocksWithDrop(
+  grid: Cell[][]
+): { cluster: [number, number][]; dropDistance: number }[] {
+  const visited = new Set<string>();
+  const suspendedClusters: {
+    cluster: [number, number][];
+    dropDistance: number;
+  }[] = [];
+
+  const directions = [
+    [-1, 0],
+    [1, 0],
+    [0, -1],
+    [0, 1], // up, down, left, right
+  ];
+
+  function bfs(startRow: number, startCol: number): [number, number][] {
+    const cluster: [number, number][] = [];
+    const queue: [number, number][] = [[startRow, startCol]];
+    visited.add(`${startRow},${startCol}`);
+
+    while (queue.length > 0) {
+      const [row, col] = queue.shift()!;
+      cluster.push([row, col]);
+
+      for (const [dr, dc] of directions) {
+        const newRow = row + dr;
+        const newCol = col + dc;
+
+        if (
+          newRow >= 0 &&
+          newRow < ROWS &&
+          newCol >= 0 &&
+          newCol < COLS &&
+          grid[newRow][newCol].filled &&
+          !visited.has(`${newRow},${newCol}`)
+        ) {
+          visited.add(`${newRow},${newCol}`);
+          queue.push([newRow, newCol]);
+        }
+      }
+    }
+
+    return cluster;
+  }
+
+  function isTouchingBottom(cluster: [number, number][]): boolean {
+    return cluster.some(([row]) => row === ROWS - 1);
+  }
+
+  for (let row = 0; row < ROWS; row++) {
+    for (let col = 0; col < COLS; col++) {
+      if (grid[row][col].filled && !visited.has(`${row},${col}`)) {
+        const cluster = bfs(row, col);
+
+        if (!isTouchingBottom(cluster)) {
+          // === Calculate maximum drop distance for entire cluster ===
+          let drop = 0;
+          while (true) {
+            const canDrop = cluster.every(([r, c]) => {
+              const newRow = r + drop + 1;
+              return (
+                newRow < ROWS &&
+                (!grid[newRow][c].filled ||
+                  cluster.some(([cr, cc]) => cr === newRow && cc === c))
+              );
+            });
+
+            if (canDrop) {
+              drop++;
+            } else {
+              break;
+            }
+          }
+
+          console.log(
+            `Suspended cluster starting at (${row}, ${col}) can fall by ${drop} cells`
+          );
+
+          suspendedClusters.push({
+            cluster,
+            dropDistance: drop,
+          });
+        }
+      }
+    }
+  }
+
+  return suspendedClusters;
+}
+export function dropFloatingBlocks() {
+  // Get clusters of blocks that are suspended and calculate how far they can drop
+  const suspendedClusters = getSuspendedBlocksWithDrop(grid);
+
+  // Loop through each suspended cluster and apply the drop
+  for (const { cluster, dropDistance } of suspendedClusters) {
+    // Sort from bottom to top to avoid overwriting cells during the drop
+    cluster.sort((a, b) => b[0] - a[0]);
+
+    // Process each block in the cluster
+    for (const [row, col] of cluster) {
+      const newRow = row + dropDistance; // Calculate the new row after dropping
+
+      // Get the current color of the block in the grid
+      const currentColor = grid[row][col].color;
+
+      // Ensure that we have a valid color
+      if (currentColor === undefined) {
+        console.warn(`Warning: Block at [${row}, ${col}] has no color!`);
+        continue;
+      }
+
+      // Update the grid to reflect the new position
+      grid[newRow][col] = {
+        filled: true,
+        color: currentColor, // Keep the original color for this block
+      };
+
+      // If there is a sprite at the old position, move it to the new position
+      if (spriteGrid[row][col]) {
+        // Move the sprite down by the drop distance
+        spriteGrid[newRow][col] = spriteGrid[row][col];
+        spriteGrid[newRow][col]!.y += dropDistance * BLOCK_SIZE; // Move sprite visually
+
+        // Set the sprite's tint (color) to the original block color
+        spriteGrid[newRow][col]!.tint = currentColor;
+      }
+
+      // Clear the old position in the grid
+      grid[row][col] = { filled: false };
+
+      // Debug: Check if color matches after the move
+      if (grid[newRow][col].color !== currentColor) {
+        console.warn(`Color mismatch after drop at [${newRow}, ${col}]`);
+      }
+
+      // Ensure that we maintain the structure of the tetromino
+      // This part of the logic ensures that if there are multiple colors in the shape, each color is preserved in the dropped block
+      // and that the tetromino shape remains intact.
+      if (spriteGrid[newRow][col]) {
+        const sprite = spriteGrid[newRow][col];
+        const initialTint = currentColor;
+
+        // Confirm the color consistency
+        if (sprite.tint !== initialTint) {
+          console.warn(`Color mismatch for sprite at [${newRow}, ${col}]`);
+          sprite.tint = initialTint;
+        }
+      }
+    }
+  }
+}
+
+function logSpriteGrid() {
+  for (let y = 0; y < ROWS; y++) {
+    let rowLog = "";
+    for (let x = 0; x < COLS; x++) {
+      rowLog += spriteGrid[y][x] ? "X" : "O"; // 'X' if sprite exists, 'O' if not
+    }
+    console.log(rowLog); // Log each row of the grid with 'X' or 'O'
+  }
+}
+
+function logGridColors() {
+  for (let y = 0; y < ROWS; y++) {
+    let rowLog = "";
+    for (let x = 0; x < COLS; x++) {
+      const cell = grid[y][x];
+      rowLog += `${cell.color || "N/A"} `;
+    }
+    console.log(rowLog); // Logs color of each cell in the grid
   }
 }

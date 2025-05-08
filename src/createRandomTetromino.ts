@@ -2,27 +2,29 @@
 import * as PIXI from "pixi.js";
 import { setupTetrominoControls } from "./tetrominoController";
 import { tetrominoTypes } from "./tetrominoData"; // Import the tetromino types data
-import { rotatePosition } from "./utils";
+import { printGridWithSuspended, rotatePosition } from "./utils";
 import {
   getBooleanGrid,
   checkTopRow,
   placeTetrominoOnGrid,
   clearCompletedLines,
+  dropFloatingBlocks,
+  grid,
 } from "./gameUtils"; // Import the helper functions
 import { ROWS, COLS, BLOCK_SIZE } from "./const";
 import { fallSpeed } from "./gameState";
+import { getSuspendedBlocksWithDrop } from "./gameUtils"; // make sure it's imported
 
 // Type definitions for position and cell state
 type Position = [number, number];
 type Cell = { filled: boolean; color?: number };
 
 // Initialize the game grid as a 2D array of cells, all set to 'not filled'
-const grid: Cell[][] = Array.from({ length: ROWS }, () =>
-  Array.from({ length: COLS }, () => ({ filled: false }))
-);
 
 let canGenerate = true; // Flag to control tetromino generation (prevents spamming new pieces)
 
+// Define suspendedContainer globally to hold suspended blocks
+const suspendedContainer = new PIXI.Container();
 // Function to create a random tetromino, handle falling logic, and clear completed lines
 export function createRandomTetromino(
   texture: PIXI.Texture,
@@ -92,6 +94,7 @@ export function createRandomTetromino(
 
   // Smooth falling logic: variables to handle timing and fall speed
   let lastTime = performance.now();
+  createRandomTetromino;
   let accumulated = 0;
 
   // window.addEventListener("keydown", (e) => {
@@ -117,8 +120,25 @@ export function createRandomTetromino(
       const moved = controller.forceMoveDown(); // Try to move the tetromino down
       accumulated = 0;
 
+      dropFloatingBlocks();
+      // Move suspended blocks down by 1 cell as the tetromino moves down
+      // const suspendedData = getSuspendedBlocksWithDrop(grid);
+      // const suspendedCoordinates: [number, number][] = suspendedData.flatMap(
+      //   (data) => data.cluster
+      // );
+
+      // // console.log("Suspended coordinates:", suspendedData);
+
+      // // Redraw the grid after moving suspended blocks
+      // printGridWithSuspended(
+      //   grid.map((row) => row.map((cell) => cell.filled)),
+      //   suspendedCoordinates,
+      //   ROWS
+      // );
+
+      // If the tetromino cannot move further down, we need to place it
       if (!moved) {
-        // When the tetromino can't move further down, place it on the grid
+        // Place the tetromino on the grid
         placeTetrominoOnGrid(tetromino, normalized, grid, app, boosterText);
 
         // Clear any completed lines
@@ -150,7 +170,7 @@ export function createRandomTetromino(
       }
     }
 
-    requestAnimationFrame(animate);
+    requestAnimationFrame(animate); // Continue animation loop
   }
 
   requestAnimationFrame(animate);

@@ -18,10 +18,24 @@ export function rotatePosition([x, y]: Position, angle: number): Position {
   }
 }
 
-// Print the grid for debugging
-export function printGrid(grid: boolean[][], ROWS: number): void {
+/**
+ * Print the grid with "1" for filled, "0" for empty, and "S" for suspended blocks.
+ */
+export function printGridWithSuspended(
+  grid: boolean[][],
+  suspended: [number, number][],
+  ROWS: number
+): void {
+  const suspendedSet = new Set(suspended.map(([r, c]) => `${r},${c}`));
+
   for (let row = 0; row < ROWS; row++) {
-    const rowStr = grid[row].map((cell) => (cell ? "1" : "0")).join(" ");
+    const rowStr = grid[row]
+      .map((cell, col) => {
+        const key = `${row},${col}`;
+        if (suspendedSet.has(key)) return "S"; // Suspended
+        return cell ? "1" : "0"; // Normal filled or empty
+      })
+      .join(" ");
     console.log(rowStr);
   }
 }
@@ -65,7 +79,13 @@ export function animateBlockDestruction(
   sprite: PIXI.Sprite,
   onComplete: () => void
 ) {
-  const duration = 300; // ms
+  // sprite.visible = false;
+  // sprite.alpha = 0;
+
+  // // Call the completion callback right away
+  // onComplete();
+
+  const duration = 0; // ms`
   const startTime = performance.now();
   const initialScale = sprite.scale.x;
   const initialAlpha = sprite.alpha;
