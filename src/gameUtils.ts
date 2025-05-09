@@ -102,6 +102,7 @@ export function placeTetrominoOnGrid(
           //   grid.map((row) => row.map((cell) => cell.filled)),
           //   ROWS
           // );
+          disableAllBlockInteractions();
         });
       }
     }
@@ -238,6 +239,7 @@ export function redrawBoard(
             }
 
             floodFill(grid, x, y, colorToDestroy);
+            disableAllBlockInteractions();
 
             createOrUpdateTextLabel(
               `Booster: ${booster}`,
@@ -488,6 +490,39 @@ export function dropFloatingBlocks() {
         if (sprite.tint !== initialTint) {
           console.warn(`Color mismatch for sprite at [${newRow}, ${col}]`);
           sprite.tint = initialTint;
+        }
+      }
+
+      if (booster > 0) {
+        for (let y = 0; y < ROWS; y++) {
+          for (let x = 0; x < COLS; x++) {
+            const sprite = spriteGrid[y][x];
+            if (sprite && grid[y][x].filled) {
+              sprite.interactive = true;
+              sprite.buttonMode = true;
+
+              sprite.removeAllListeners("pointerdown"); // Prevent duplicate listeners
+              sprite.on("pointerdown", () => {
+                const colorToDestroy = sprite.tint;
+                floodFill(grid, x, y, colorToDestroy);
+                booster--;
+                if (booster <= 0) {
+                  booster = 0;
+                  disableAllBlockInteractions();
+                }
+                // createOrUpdateTextLabel(
+                //   `Booster: ${booster}`,
+                //   18,
+                //   0x000000,
+                //   sprite.parent!.parent!.width - 100,
+                //   5,
+                //   PIXI.Application.shared, // Replace with actual app if needed
+                //   undefined // or pass boosterText if you have it
+                // );
+                disableAllBlockInteractions(); // Optional: in case you want to re-disable after one click
+              });
+            }
+          }
         }
       }
     }
