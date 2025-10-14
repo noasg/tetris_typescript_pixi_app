@@ -2,7 +2,7 @@
 import * as PIXI from "pixi.js";
 import { setupTetrominoControls } from "./tetrominoController";
 import { tetrominoTypes } from "./tetrominoData"; // Import the tetromino types data
-import { printGridWithSuspended, rotatePosition } from "./utils";
+import { rotatePosition } from "./utils";
 import {
   getBooleanGrid,
   checkTopRow,
@@ -11,20 +11,20 @@ import {
   dropFloatingBlocks,
   grid,
 } from "./gameUtils"; // Import the helper functions
-import { ROWS, COLS, BLOCK_SIZE } from "./const";
+import { COLS, BLOCK_SIZE } from "./const";
 import { fallSpeed } from "./gameState";
-import { getSuspendedBlocksWithDrop } from "./gameUtils"; // make sure it's imported
+// import { getSuspendedBlocksWithDrop } from "./gameUtils"; // make sure it's imported
 
 // Type definitions for position and cell state
 type Position = [number, number];
-type Cell = { filled: boolean; color?: number };
+// type Cell = { filled: boolean; color?: number };
 
 // Initialize the game grid as a 2D array of cells, all set to 'not filled'
 
 let canGenerate = true; // Flag to control tetromino generation (prevents spamming new pieces)
 
 // Define suspendedContainer globally to hold suspended blocks
-const suspendedContainer = new PIXI.Container();
+// const suspendedContainer = new PIXI.Container();
 // Function to create a random tetromino, handle falling logic, and clear completed lines
 export function createRandomTetromino(
   texture: PIXI.Texture,

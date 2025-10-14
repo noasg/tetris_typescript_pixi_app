@@ -7,7 +7,7 @@ import {
   BOOSTER_MAX_VALUE,
   BOOSTER_INITIAL_VALUE,
 } from "./const";
-import { animateBlockDestruction, printGridWithSuspended } from "./utils"; // Import printGrid
+import { animateBlockDestruction } from "./utils"; // Import printGrid
 import * as PIXI from "pixi.js";
 import { createOrUpdateTextLabel } from "./utils"; // Import the new helper function for text updates
 import { fallSpeed, setFallSpeed } from "./gameState";
@@ -529,23 +529,23 @@ export function dropFloatingBlocks() {
   }
 }
 
-function logSpriteGrid() {
-  for (let y = 0; y < ROWS; y++) {
-    let rowLog = "";
-    for (let x = 0; x < COLS; x++) {
-      rowLog += spriteGrid[y][x] ? "X" : "O"; // 'X' if sprite exists, 'O' if not
-    }
-    console.log(rowLog); // Log each row of the grid with 'X' or 'O'
-  }
-}
+// function logSpriteGrid() {
+//   for (let y = 0; y < ROWS; y++) {
+//     let rowLog = "";
+//     for (let x = 0; x < COLS; x++) {
+//       rowLog += spriteGrid[y][x] ? "X" : "O"; // 'X' if sprite exists, 'O' if not
+//     }
+//     console.log(rowLog); // Log each row of the grid with 'X' or 'O'
+//   }
+// }
 
-function logGridColors() {
-  for (let y = 0; y < ROWS; y++) {
-    let rowLog = "";
-    for (let x = 0; x < COLS; x++) {
-      const cell = grid[y][x];
-      rowLog += `${cell.color || "N/A"} `;
-    }
-    console.log(rowLog); // Logs color of each cell in the grid
-  }
-}
+// function logGridColors() {
+//   for (let y = 0; y < ROWS; y++) {
+//     let rowLog = "";
+//     for (let x = 0; x < COLS; x++) {
+//       const cell = grid[y][x];
+//       rowLog += `${cell.color || "N/A"} `;
+//     }
+//     console.log(rowLog); // Logs color of each cell in the grid
+//   }
+// }
